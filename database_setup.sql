@@ -79,3 +79,7 @@ VALUES
   ('กองสาธารณสุข', 'เจ้าหน้าที่ภาคิไนย', 'U0aab1fa5ecc50aef944bb1500f8d088b')
 ON CONFLICT DO NOTHING;
 
+-- 10. Add completion_image_urls column to reports table if it doesn't exist
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS completion_image_urls TEXT[] NULL;
+
+

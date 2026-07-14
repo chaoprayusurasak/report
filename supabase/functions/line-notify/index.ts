@@ -114,24 +114,33 @@ serve(async (req) => {
             }
           ]
         },
-        ...(mapsUrl ? {
-          "footer": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "button",
-                "style": "primary",
-                "color": "#06C755",
-                "action": {
-                  "type": "uri",
-                  "label": "📍 นำทางบนแผนที่ (Google Maps)",
-                  "uri": mapsUrl
-                }
+        "footer": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
+          "contents": [
+            ...(mapsUrl ? [{
+              "type": "button",
+              "style": "primary",
+              "color": "#06C755",
+              "action": {
+                "type": "uri",
+                "label": "📍 นำทางบนแผนที่ (Google Maps)",
+                "uri": mapsUrl
               }
-            ]
-          }
-        } : {})
+            }] : []),
+            {
+              "type": "button",
+              "style": "primary",
+              "color": "#4A90E2",
+              "action": {
+                "type": "postback",
+                "label": "✅ รับทราบงาน (Acknowledge)",
+                "data": `action=acknowledge&reportId=${reportId}`
+              }
+            }
+          ]
+        }
       };
 
       // 4. Send Push Message to all officers of this department

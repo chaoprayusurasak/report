@@ -138,9 +138,10 @@ serve(async (req) => {
     const currentStep = session ? session.current_step : "ask_location";
     const tempData = session ? session.temp_data || {} : {};
 
-    // 0. Process Postback Events (for ratings)
+    // 0. Process Postback Events
     if (event.type === "postback") {
       const postbackData = event.postback.data || "";
+      
       if (postbackData.startsWith("action=rate")) {
         const params = new URLSearchParams(postbackData);
         const reportId = params.get("id");
@@ -164,6 +165,142 @@ serve(async (req) => {
             await replyMessage(replyToken, [{
               type: "text",
               text: `ขอบคุณสำหรับคะแนนประเมิน ${score} ดาว (${stars}) ครับ! ทางเทศบาลจะนำคำติชมไปปรับปรุงการบริการให้ดียิ่งขึ้นครับ ❤️`
+            }]);
+          }
+        }
+      } 
+      else if (postbackData.includes("action=acknowledge")) {
+        const params = new URLSearchParams(postbackData);
+        const reportId = params.get("reportId");
+
+        if (reportId) {
+          // 1. Update status to "กำลังดำเนินการ"
+          const { error: updateErr } = await supabase
+            .from("reports")
+            .update({ status: "กำลังดำเนินการ" })
+            .eq("id", reportId);
+
+          if (updateErr) {
+            console.error("Failed to update status to In Progress:", updateErr);
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "เกิดข้อผิดพลาดในการเปลี่ยนสถานะเป็น 'กำลังดำเนินการ' ครับ"
+            }]);
+          } else {
+            // 2. Fetch report details (reference_id)
+            const { data: report } = await supabase
+              .from("reports")
+              .select("reference_id, description, location_name, reporter_line_id")
+              .eq("id", reportId)
+              .single();
+
+            const refId = report ? report.reference_id : "";
+
+            // 3. Notify the citizen (reporter)
+            const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+            if (report && report.reporter_line_id && supabaseUrl) {
+              try {
+                await fetch(`${supabaseUrl}/functions/v1/line-notify`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                  },
+                  body: JSON.stringify({ reportId, status: "กำลังดำเนินการ" })
+                });
+              } catch (notifyErr) {
+                console.error("Failed to notify citizen:", notifyErr);
+              }
+            }
+
+            // 4. Reply to officer with complete button
+            const flexBubble = {
+              "type": "bubble",
+              "header": {
+                "type": "box",
+                "layout": "vertical",
+                "backgroundColor": "#06C755",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "✅ รับทราบการปฏิบัติงานเรียบร้อย",
+                    "color": "#FFFFFF",
+                    "weight": "bold",
+                    "size": "md"
+                  }
+                ]
+              },
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "md",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": `รับทราบงานสำหรับรหัสอ้างอิง: ${refId} แล้วครับ สถานะถูกเปลี่ยนเป็น 'กำลังดำเนินการ' เรียบร้อยครับ`,
+                    "size": "sm",
+                    "wrap": true
+                  },
+                  {
+                    "type": "text",
+                    "text": "เมื่อดำเนินการแก้ไขเสร็จสิ้น กรุณากดปุ่มด้านล่างเพื่อถ่ายรูปภาพผลงานส่งปิดเคสครับ",
+                    "size": "xs",
+                    "color": "#8C8C8C",
+                    "wrap": true
+                  }
+                ]
+              },
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#FF8C00",
+                    "action": {
+                      "type": "postback",
+                      "label": "🏁 รายงานผล/เสร็จสิ้นงาน (Complete)",
+                      "data": `action=complete_prompt&reportId=${reportId}`
+                    }
+                  }
+                ]
+              }
+            };
+
+            await replyMessage(replyToken, [{
+              type: "flex",
+              altText: "รับทราบการมอบหมายงานเรียบร้อย",
+              contents: flexBubble
+            }]);
+          }
+        }
+      }
+      else if (postbackData.includes("action=complete_prompt")) {
+        const params = new URLSearchParams(postbackData);
+        const reportId = params.get("reportId");
+
+        if (reportId) {
+          // Set officer session state to "officer_upload_photo"
+          const { error: sessionErr } = await supabase
+            .from("user_sessions")
+            .upsert({
+              line_user_id: lineUserId,
+              current_step: "officer_upload_photo",
+              temp_data: { reportId },
+              updated_at: new Date().toISOString()
+            });
+
+          if (sessionErr) {
+            console.error("Failed to create session for completion upload:", sessionErr);
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "เกิดข้อผิดพลาดทางเทคนิคในการเตรียมส่งภาพผลงานครับ"
+            }]);
+          } else {
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "📸 กรุณาส่งรูปภาพผลการดำเนินงานแก้ไขปัญหา เพื่อใช้บันทึกเป็นหลักฐานและปิดงานครับ (ส่งรูปภาพในแชตนี้ได้เลยครับ)"
             }]);
           }
         }
@@ -346,6 +483,124 @@ serve(async (req) => {
           }]);
           continue;
         }
+      }
+
+      // Officer completion photo upload step
+      if (currentStep === "officer_upload_photo") {
+        if (message.type === "image") {
+          const imageId = message.id;
+          const reportId = tempData.reportId;
+
+          if (!reportId) {
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "❌ เกิดข้อผิดพลาด ไม่พบข้อมูลหมายเลขอ้างอิงในระบบครับ"
+            }]);
+            await supabase.from("user_sessions").delete().eq("line_user_id", lineUserId);
+            continue;
+          }
+
+          // Fetch image content from LINE API
+          const imageRes = await fetch(`https://api-data.line.me/v2/bot/message/${imageId}/content`, {
+            headers: {
+              Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+            }
+          });
+
+          if (imageRes.ok) {
+            const blob = await imageRes.blob();
+            const fileName = `completion_${reportId}_${Date.now()}.jpg`;
+
+            // Upload image to Supabase Storage
+            const { data: uploadData, error: uploadErr } = await supabase.storage
+              .from("report-images")
+              .upload(fileName, blob, {
+                contentType: "image/jpeg",
+                upsert: true
+              });
+
+            if (uploadErr) {
+              console.error("Storage upload error:", uploadErr);
+              await replyMessage(replyToken, [{
+                type: "text",
+                text: "❌ ไม่สามารถบันทึกรูปภาพหลักฐานได้ กรุณาลองใหม่อีกครั้งครับ"
+              }]);
+            } else {
+              // Get public URL
+              const { data: publicUrlData } = supabase.storage
+                .from("report-images")
+                .getPublicUrl(fileName);
+
+              if (publicUrlData?.publicUrl) {
+                const publicUrl = publicUrlData.publicUrl;
+
+                // 1. Get current completion_image_urls from database to append
+                const { data: reportData } = await supabase
+                  .from("reports")
+                  .select("completion_image_urls")
+                  .eq("id", reportId)
+                  .single();
+
+                const currentUrls = reportData?.completion_image_urls || [];
+                const updatedUrls = [...currentUrls, publicUrl];
+
+                // 2. Update report status to "เสร็จสิ้น" and save completion image
+                const { error: updateErr } = await supabase
+                  .from("reports")
+                  .update({
+                    status: "เสร็จสิ้น",
+                    completion_image_urls: updatedUrls
+                  })
+                  .eq("id", reportId);
+
+                if (updateErr) {
+                  console.error("Database update error:", updateErr);
+                  await replyMessage(replyToken, [{
+                    type: "text",
+                    text: "❌ เกิดข้อผิดพลาดในการบันทึกข้อมูลการเสร็จสิ้นงานลงฐานข้อมูลครับ"
+                  }]);
+                } else {
+                  // Clear session
+                  await supabase.from("user_sessions").delete().eq("line_user_id", lineUserId);
+
+                  // 3. Notify the citizen (reporter)
+                  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+                  if (supabaseUrl) {
+                    try {
+                      await fetch(`${supabaseUrl}/functions/v1/line-notify`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                        },
+                        body: JSON.stringify({ reportId, status: "เสร็จสิ้น" })
+                      });
+                    } catch (notifyErr) {
+                      console.error("Failed to notify citizen of completion:", notifyErr);
+                    }
+                  }
+
+                  // 4. Reply success to officer
+                  await replyMessage(replyToken, [{
+                    type: "text",
+                    text: "🎉 บันทึกภาพผลงานหลักฐานเรียบร้อยครับ! สถานะงานถูกเปลี่ยนเป็น 'เสร็จสิ้น' และส่งแจ้งเตือนให้ผู้ร้องเรียนทราบแล้ว ขอบคุณสำหรับการปฏิบัติงานครับ"
+                  }]);
+                }
+              }
+            }
+          } else {
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "❌ ไม่สามารถดึงรูปภาพจากไลน์ได้ กรุณาส่งใหม่อีกครั้งครับ"
+            }]);
+          }
+        } else {
+          await replyMessage(replyToken, [{
+            type: "text",
+            text: "📸 กรุณาส่งไฟล์รูปภาพการปฏิบัติงานเพื่อปิดเคสครับ หากต้องการยกเลิกการปิดเคส ให้พิมพ์คำว่า 'ยกเลิก'"
+          }]);
+        }
+        continue;
       }
 
       // Step Machine
