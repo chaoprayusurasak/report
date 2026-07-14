@@ -178,7 +178,7 @@ serve(async (req) => {
     // Query database for report details
     const { data: report, error: fetchErr } = await supabase
       .from("reports")
-      .select("reference_id, reporter_name, reporter_line_id, category, description")
+      .select("reference_id, reporter_name, reporter_line_id, category, description, image_urls, completion_image_urls, created_at, updated_at")
       .eq("id", reportId)
       .single();
 
@@ -203,6 +203,22 @@ serve(async (req) => {
     const messages = [];
 
     if (status.includes("เสร็จสิ้น")) {
+      const formattedReportDate = report.created_at
+        ? new Date(report.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " น."
+        : "ไม่ได้ระบุ";
+
+      const formattedCompleteDate = report.updated_at
+        ? new Date(report.updated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " น."
+        : "ไม่ได้ระบุ";
+
+      const beforeImageUrl = (report.image_urls && report.image_urls.length > 0)
+        ? report.image_urls[0]
+        : "https://placehold.co/600x450/e0e0e0/8c8c8c?text=No+Before+Image";
+
+      const afterImageUrl = (report.completion_image_urls && report.completion_image_urls.length > 0)
+        ? report.completion_image_urls[0]
+        : "https://placehold.co/600x450/e0e0e0/8c8c8c?text=No+After+Image";
+
       const flexBubble = {
         "type": "bubble",
         "body": {
@@ -222,6 +238,91 @@ serve(async (req) => {
               "text": `เรียน คุณ ${reporter_name || "ผู้ร้องเรียน"},\n\nเรื่องร้องเรียนของท่าน หมายเลขอ้างอิง: ${reference_id || "ไม่มี"}\nได้รับการดำเนินการแก้ไขเรียบร้อยแล้วครับ ✅`,
               "size": "sm",
               "wrap": true
+            },
+            {
+              "type": "box",
+              "layout": "vertical",
+              "spacing": "xs",
+              "backgroundColor": "#F9F9F9",
+              "paddingAll": "md",
+              "cornerRadius": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "⏳ ไทม์ไลน์การดำเนินงาน",
+                  "weight": "bold",
+                  "size": "xs",
+                  "color": "#555555",
+                  "margin": "none"
+                },
+                {
+                  "type": "text",
+                  "text": `🟢 เริ่มแจ้งเรื่อง: ${formattedReportDate}`,
+                  "size": "xs",
+                  "color": "#666666",
+                  "margin": "xs"
+                },
+                {
+                  "type": "text",
+                  "text": `✅ แก้ไขเสร็จสิ้น: ${formattedCompleteDate}`,
+                  "size": "xs",
+                  "color": "#666666",
+                  "margin": "xs"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "sm",
+              "contents": [
+                {
+                  "type": "box",
+                  "layout": "vertical",
+                  "contents": [
+                    {
+                      "type": "text",
+                      "text": "📸 ก่อนแก้ไข (ประชาชน)",
+                      "size": "xxs",
+                      "color": "#8C8C8C",
+                      "align": "center",
+                      "weight": "bold"
+                    },
+                    {
+                      "type": "image",
+                      "url": beforeImageUrl,
+                      "size": "full",
+                      "aspectMode": "cover",
+                      "aspectRatio": "4:3",
+                      "cornerRadius": "sm",
+                      "margin": "xs"
+                    }
+                  ]
+                },
+                {
+                  "type": "box",
+                  "layout": "vertical",
+                  "contents": [
+                    {
+                      "type": "text",
+                      "text": "📸 หลังแก้ไข (เจ้าหน้าที่)",
+                      "size": "xxs",
+                      "color": "#8C8C8C",
+                      "align": "center",
+                      "weight": "bold"
+                    },
+                    {
+                      "type": "image",
+                      "url": afterImageUrl,
+                      "size": "full",
+                      "aspectMode": "cover",
+                      "aspectRatio": "4:3",
+                      "cornerRadius": "sm",
+                      "margin": "xs"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "separator"
