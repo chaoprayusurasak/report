@@ -67,6 +67,7 @@ export default function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState(null);
   const [emailSending, setEmailSending] = useState(false);
   const [adminDept, setAdminDept] = useState('');
+  const [departments, setDepartments] = useState([]);
   const [officerName, setOfficerName] = useState(() => {
     return localStorage.getItem('selected_officer') || 'นายจิรายุ วงษ์พิทักษ์';
   });
@@ -142,8 +143,24 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchDepartments = async () => {
+    const supabase = getSupabase();
+    if (!supabase || !isSupabaseConfigured()) return;
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('name')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setDepartments(data.map(d => d.name) || []);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+    }
+  };
+
   useEffect(() => {
     fetchReports();
+    fetchDepartments();
   }, []);
 
   const handleStatusChange = async (reportId, newStatus) => {
@@ -733,9 +750,8 @@ export default function AdminDashboard() {
                   <img src="https://cdn-icons-png.flaticon.com/512/1946/1946436.png" className="flaticon-icon" alt="department" />
                   หน่วยงานที่รับผิดชอบ
                 </h4>
-                <input
-                  type="text"
-                  className="dept-input"
+                <select
+                  className="dept-select"
                   style={{
                     width: '100%',
                     padding: '0.6rem',
@@ -746,15 +762,22 @@ export default function AdminDashboard() {
                     boxSizing: 'border-box'
                   }}
                   value={adminDept}
-                  onChange={(e) => setAdminDept(e.target.value)}
-                  onBlur={(e) => handleDepartmentChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.target.blur();
-                    }
+                  onChange={(e) => {
+                    const newDept = e.target.value;
+                    setAdminDept(newDept);
+                    handleDepartmentChange(newDept);
                   }}
-                  placeholder="กรอกหน่วยงาน เช่น กองช่าง, กองสาธารณสุขฯ"
-                />
+                >
+                  <option value="">-- เลือกหน่วยงานที่รับผิดชอบ --</option>
+                  {departments.map((deptName, idx) => (
+                    <option key={idx} value={deptName}>
+                      {deptName}
+                    </option>
+                  ))}
+                  {adminDept && !departments.includes(adminDept) && (
+                    <option value={adminDept}>{adminDept}</option>
+                  )}
+                </select>
               </div>
 
               <div className="detail-section">

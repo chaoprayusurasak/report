@@ -85,4 +85,28 @@ ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS completion_image_urls TEXT[]
 -- 11. Add updated_at column to reports table if it doesn't exist
 ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NULL DEFAULT now();
 
+-- 12. Create departments table and policies
+CREATE TABLE IF NOT EXISTS public.departments (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE NULL DEFAULT now(),
+  CONSTRAINT departments_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow select for everyone" ON public.departments;
+CREATE POLICY "Allow select for everyone" ON public.departments FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow all for authenticated" ON public.departments;
+CREATE POLICY "Allow all for authenticated" ON public.departments FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Seed initial departments
+INSERT INTO public.departments (name)
+VALUES 
+  ('กองช่าง'),
+  ('กองสาธารณสุข'),
+  ('สำนักปลัดเทศบาล')
+ON CONFLICT (name) DO NOTHING;
+
 
