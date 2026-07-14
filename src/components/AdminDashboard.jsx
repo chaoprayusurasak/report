@@ -154,7 +154,7 @@ export default function AdminDashboard() {
     try {
       const { error } = await supabase
         .from('reports')
-        .update({ status: newStatus })
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', reportId);
 
       if (error) throw error;

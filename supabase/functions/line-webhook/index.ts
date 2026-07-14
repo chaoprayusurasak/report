@@ -177,7 +177,7 @@ serve(async (req) => {
           // 1. Update status to "กำลังดำเนินการ"
           const { error: updateErr } = await supabase
             .from("reports")
-            .update({ status: "กำลังดำเนินการ" })
+            .update({ status: "กำลังดำเนินการ", updated_at: new Date().toISOString() })
             .eq("id", reportId);
 
           if (updateErr) {
@@ -549,7 +549,8 @@ serve(async (req) => {
                   .from("reports")
                   .update({
                     status: "เสร็จสิ้น",
-                    completion_image_urls: updatedUrls
+                    completion_image_urls: updatedUrls,
+                    updated_at: new Date().toISOString()
                   })
                   .eq("id", reportId);
 
