@@ -208,46 +208,48 @@ export default function AdminDashboard() {
     setAdminDept(newDept);
     if (!selectedReport) return;
 
-    // Check if the value has actually changed to prevent duplicate executions (e.g. Enter + Blur)
     const normalizedNewDept = newDept ? newDept.trim() : '';
     const normalizedOldDept = selectedReport.responsible_department ? selectedReport.responsible_department.trim() : '';
-    if (normalizedNewDept === normalizedOldDept) {
-      return;
-    }
 
     const supabase = getSupabase();
     if (!supabase) return;
 
     try {
-      // Attempt to save to database
-      const { error } = await supabase
-        .from('reports')
-        .update({ responsible_department: newDept })
-        .eq('id', selectedReport.id);
+      // Only update database if the department has actually changed
+      if (normalizedNewDept !== normalizedOldDept) {
+        const { error } = await supabase
+          .from('reports')
+          .update({ responsible_department: newDept })
+          .eq('id', selectedReport.id);
 
-      if (error) {
-        console.warn('Database column responsible_department might not exist yet:', error.message);
-      } else {
-        // Update local list state
-        setReports((prev) =>
-          prev.map((r) => (r.id === selectedReport.id ? { ...r, responsible_department: newDept } : r))
-        );
-        setSelectedReport((prev) => ({ ...prev, responsible_department: newDept }));
+        if (error) {
+          console.warn('Database column responsible_department might not exist yet:', error.message);
+        } else {
+          // Update local list state
+          setReports((prev) =>
+            prev.map((r) => (r.id === selectedReport.id ? { ...r, responsible_department: newDept } : r))
+          );
+          setSelectedReport((prev) => ({ ...prev, responsible_department: newDept }));
+        }
+      }
 
-        // Notify department officers about the newly assigned task
-        if (newDept && newDept.trim() !== '') {
-          try {
-            await supabase.functions.invoke('line-notify', {
-              body: { reportId: selectedReport.id, dispatchDept: newDept.trim() }
-            });
-            console.log(`Dispatched task notification for department: ${newDept}`);
-          } catch (notifyErr) {
-            console.error('Failed to dispatch department notification:', notifyErr);
-          }
+      // Always send/resend the LINE notification if a department is selected
+      if (newDept && newDept.trim() !== '') {
+        try {
+          const { error: invokeErr } = await supabase.functions.invoke('line-notify', {
+            body: { reportId: selectedReport.id, dispatchDept: newDept.trim() }
+          });
+          if (invokeErr) throw invokeErr;
+          console.log(`Dispatched task notification for department: ${newDept}`);
+          alert(`✅ มอบหมายงานให้ "${newDept}" และส่งแจ้งเตือนเข้าไลน์เรียบร้อยแล้วครับ`);
+        } catch (notifyErr) {
+          console.error('Failed to dispatch department notification:', notifyErr);
+          alert('⚠️ บันทึกข้อมูลแล้ว แต่ไม่สามารถส่งแจ้งเตือนเข้าไลน์ได้: ' + (notifyErr.message || JSON.stringify(notifyErr)));
         }
       }
     } catch (err) {
       console.error('Failed to save department in database:', err);
+      alert('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + err.message);
     }
   };
 
@@ -764,11 +766,7 @@ export default function AdminDashboard() {
                     boxSizing: 'border-box'
                   }}
                   value={adminDept}
-                  onChange={(e) => {
-                    const newDept = e.target.value;
-                    setAdminDept(newDept);
-                    handleDepartmentChange(newDept);
-                  }}
+                  onChange={(e) => setAdminDept(e.target.value)}
                 >
                   <option value="">-- เลือกหน่วยงานที่รับผิดชอบ --</option>
                   {departments.map((deptName, idx) => (
@@ -780,6 +778,36 @@ export default function AdminDashboard() {
                     <option value={adminDept}>{adminDept}</option>
                   )}
                 </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!adminDept) {
+                      alert("⚠️ กรุณาเลือกหน่วยงานก่อนส่งมอบหมายงานครับ");
+                      return;
+                    }
+                    handleDepartmentChange(adminDept);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#06C755',
+                    color: 'white',
+                    fontSize: '10pt',
+                    fontWeight: 'bold',
+                    marginTop: '0.5rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <img src="https://cdn-icons-png.flaticon.com/512/785/785116.png" style={{ width: '14px', height: '14px', filter: 'invert(1)' }} alt="send" />
+                  ส่งมอบหมายงาน (Dispatch)
+                </button>
               </div>
 
               <div className="detail-section">
