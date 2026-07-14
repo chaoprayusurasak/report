@@ -737,6 +737,181 @@ serve(async (req) => {
           }]);
           continue;
         }
+
+        // Officer view remaining/pending tasks checklist command
+        if (textMsg === "งานคงเหลือ" || textMsg === "เช็คงาน" || textMsg === "งานของฉัน") {
+          // 1. Identify if sender is a registered officer and get their department
+          const { data: officer, error: officerErr } = await supabase
+            .from("department_officers")
+            .select("department_name, officer_name")
+            .eq("line_user_id", lineUserId)
+            .maybeSingle();
+
+          if (officerErr) {
+            console.error("Error querying officer:", officerErr);
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "❌ เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์เจ้าหน้าที่ครับ"
+            }]);
+            continue;
+          }
+
+          if (!officer) {
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "❌ ขออภัยครับ ท่านไม่ได้รับสิทธิ์เข้าถึงเมนูสำหรับเจ้าหน้าที่ (โปรดติดต่อแอดมินเพื่อเพิ่มสิทธิ์ผู้รับผิดชอบ)"
+            }]);
+            continue;
+          }
+
+          const deptName = officer.department_name;
+
+          // 2. Query unresolved tasks for this department
+          const { data: deptReports, error: reportsErr } = await supabase
+            .from("reports")
+            .select("id, reference_id, category, description, status, latitude, longitude, location_name, created_at")
+            .eq("responsible_department", deptName)
+            .in("status", ["รอดำเนินการ", "กำลังดำเนินการ"])
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          if (reportsErr) {
+            console.error("Error querying department reports:", reportsErr);
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "❌ เกิดข้อผิดพลาดในการดึงรายการงานคงเหลือครับ"
+            }]);
+            continue;
+          }
+
+          if (!deptReports || deptReports.length === 0) {
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: `🎉 เรียนคุณ ${officer.officer_name} กองงาน "${deptName}" ไม่มีงานค้างในขณะนี้ครับ! ขอบคุณสำหรับความตั้งใจในการปฏิบัติงานครับ 💚`
+            }]);
+            continue;
+          }
+
+          // 3. Build a Carousel of pending tasks for the department
+          const bubbles = deptReports.map(report => {
+            const formattedDate = formatThaiDate(report.created_at);
+            const shortDesc = report.description.length > 40 
+              ? report.description.substring(0, 37) + "..." 
+              : report.description;
+            
+            let statusColor = "#FF4B4B";
+            if (report.status === "กำลังดำเนินการ") {
+              statusColor = "#F1C40F";
+            }
+
+            const mapLink = (report.latitude && report.longitude)
+              ? `https://www.google.com/maps/search/?api=1&query=${report.latitude},${report.longitude}`
+              : "https://maps.google.com";
+
+            return {
+              "type": "bubble",
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": `📋 งานของ ${deptName}`,
+                    "weight": "bold",
+                    "size": "md",
+                    "color": "#06C755"
+                  },
+                  {
+                    "type": "text",
+                    "text": `รหัสอ้างอิง: ${report.reference_id}`,
+                    "size": "xs",
+                    "color": "#8C8C8C",
+                    "weight": "bold"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": "สถานะ: ",
+                        "size": "sm",
+                        "color": "#555555"
+                      },
+                      {
+                        "type": "text",
+                        "text": report.status,
+                        "size": "sm",
+                        "weight": "bold",
+                        "color": statusColor
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "text": `รายละเอียด: ${shortDesc}`,
+                    "size": "sm",
+                    "color": "#333333",
+                    "wrap": true,
+                    "maxLines": 2
+                  },
+                  {
+                    "type": "text",
+                    "text": `จุดสังเกต: ${report.location_name || "ไม่ระบุ"}`,
+                    "size": "xs",
+                    "color": "#666666",
+                    "wrap": true,
+                    "maxLines": 1
+                  },
+                  {
+                    "type": "text",
+                    "text": `แจ้งเมื่อ: ${formattedDate}`,
+                    "size": "xxs",
+                    "color": "#999999",
+                    "margin": "xs"
+                  }
+                ]
+              },
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "xs",
+                "contents": [
+                  {
+                    "type": "button",
+                    "style": "secondary",
+                    "action": {
+                      "type": "uri",
+                      "label": "📍 นำทางบนแผนที่",
+                      "uri": mapLink
+                    }
+                  },
+                  {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#06C755",
+                    "action": {
+                      "type": "postback",
+                      "label": "🏁 ปิดงาน (Complete)",
+                      "data": `action=complete_prompt&reportId=${report.id}`
+                    }
+                  }
+                ]
+              }
+            };
+          });
+
+          await replyMessage(replyToken, [{
+            type: "flex",
+            altText: "รายการงานคงเหลือของกองงานท่าน",
+            contents: {
+              "type": "carousel",
+              "contents": bubbles
+            }
+          }]);
+          continue;
+        }
       }
 
       // Officer completion photo upload step
