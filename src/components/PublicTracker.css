@@ -44,7 +44,7 @@
 /* === Summary Stats Banner === */
 .stats-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -113,14 +113,23 @@
 .stats-card.completed {
   border-left: 4px solid #2ecc71;
 }
+.stats-card.rating {
+  border-left: 4px solid #F4B400;
+}
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .stats-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
   .stats-summary-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 480px) {
   .stats-summary-grid {
     grid-template-columns: 1fr;
   }

@@ -54,6 +54,10 @@ export default function PublicTracker() {
   const pendingCount = reports.filter((r) => r.status === 'รอดำเนินการ').length;
   const progressCount = reports.filter((r) => r.status === 'กำลังดำเนินการ').length;
   const completedCount = reports.filter((r) => r.status === 'เสร็จสิ้น').length;
+  const ratedReports = reports.filter((r) => r.rating !== null && r.rating !== undefined && r.rating > 0);
+  const averageRating = ratedReports.length > 0 
+    ? (ratedReports.reduce((sum, r) => sum + r.rating, 0) / ratedReports.length).toFixed(1)
+    : '0.0';
 
   // Default Chonburi (Sriracha/Chaophraya Surasak) center
   const defaultCenter = [13.1500, 100.9800];
@@ -204,6 +208,17 @@ export default function PublicTracker() {
             <strong className="stats-value">{completedCount}</strong>
           </div>
         </div>
+        <div className="stats-card rating">
+          <div className="stats-card-icon-wrapper" style={{ background: '#fff9e6' }}>
+            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" className="stats-card-icon" alt="rating" />
+          </div>
+          <div className="stats-card-info">
+            <span className="stats-label">ความพึงพอใจเฉลี่ย ({ratedReports.length} งาน)</span>
+            <strong className="stats-value" style={{ color: '#F4B400' }}>
+              {ratedReports.length > 0 ? `${averageRating} / 5.0` : 'ไม่มีข้อมูล'}
+            </strong>
+          </div>
+        </div>
       </div>
 
       {/* Map Overview */}
@@ -310,6 +325,14 @@ export default function PublicTracker() {
                     <img src="https://cdn-icons-png.flaticon.com/512/1022/1022204.png" className="flaticon-btn-icon" alt="time" />
                     แจ้งเมื่อ: {formatDate(report.created_at)}
                   </span>
+                  {report.rating && report.rating > 0 && (
+                    <div className="tracker-rating" style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem', gap: '0.25rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.25rem' }}>ความพึงพอใจ:</span>
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <span key={idx} style={{ color: idx < report.rating ? '#F4B400' : '#E0E0E0', fontSize: '15px' }}>★</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {report.image_urls && report.image_urls.length > 0 && (
