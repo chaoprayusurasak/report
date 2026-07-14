@@ -1,0 +1,520 @@
+.admin-dashboard {
+  padding: 0.5rem 0;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.refresh-btn {
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--border);
+  background: white;
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.refresh-btn:hover {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.filters-bar > * {
+  flex: 1;
+  min-width: 160px;
+}
+
+.filters-bar .search-input {
+  flex: 2;
+  min-width: 250px;
+}
+
+.filters-bar .filter-date-wrapper {
+  flex: 1.2;
+  min-width: 180px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+}
+
+.filter-select {
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: white;
+  outline: none;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  border-color: var(--primary);
+}
+
+/* === Table === */
+.reports-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: white;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.reports-table th {
+  background: #fdfaf7;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.report-row {
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.report-row:hover {
+  background: #faf7f2;
+}
+
+.ref-badge {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  background: #f0ebe4;
+  color: var(--primary-dark);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.phone-sub {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+.desc-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-badge.status-รอดำเนินการ {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.status-กำลังดำเนินการ {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.status-เสร็จสิ้น {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-selector {
+  padding: 0.4rem;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  background: white;
+  cursor: pointer;
+  outline: none;
+}
+
+.status-selector:focus {
+  border-color: var(--primary);
+}
+
+/* === States === */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: white;
+}
+
+/* === Detail Modal === */
+.detail-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.detail-modal-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  max-width: 600px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
+}
+
+.modal-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition-fast);
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #f0ebe4;
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.detail-section h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+}
+
+.detail-section p {
+  font-size: 0.88rem;
+  margin-bottom: 0.4rem;
+}
+
+.map-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #4285f4;
+  color: white;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.map-link-btn:hover {
+  background: #357ae8;
+  transform: translateY(-1px);
+}
+
+/* Image grid */
+.modal-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.modal-image-grid img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.modal-image-grid img:hover {
+  transform: scale(1.03);
+  border-color: var(--primary);
+}
+
+/* Status updater row */
+.status-updater-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.status-option-btn {
+  padding: 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  transition: var(--transition-fast);
+}
+
+.status-option-btn.status-รอดำเนินการ.active {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
+}
+
+.status-option-btn.status-กำลังดำเนินการ.active {
+  background: #cce5ff;
+  color: #004085;
+  border-color: #b8daff;
+}
+
+.status-option-btn.status-เสร็จสิ้น.active {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+
+.status-option-btn:hover:not(.active) {
+  background: var(--bg);
+}
+
+/* ================= PRINT SECTION STYLES ================= */
+.print-only-document {
+  display: none;
+  padding-top: 1.5cm !important;
+  /* 👈 ระยะขอบด้านบน */
+  padding-bottom: 2cm !important;
+  /* 👈 ระยะขอบด้านล่าง */
+  padding-left: 3cm !important;
+  /* 👈 ระยะขอบด้านซ้าย */
+  padding-right: 2cm !important;
+  /* 👈 ระยะขอบด้านขวา */
+  /* Hide on screen */
+}
+
+@media print {
+
+  /* Set A4 page layout and remove default browser headers and footers */
+  @page {
+    size: A4;
+    margin: 0;
+    /* Removes headers and footers */
+  }
+
+  /* Hide all non-essential UI elements on the page */
+  .global-navbar,
+  .tab-navigation,
+  .card-header,
+  .admin-header,
+  .filters-bar,
+  .reports-table-container,
+  .detail-modal-overlay,
+  .footer,
+  .refresh-btn {
+    display: none !important;
+  }
+
+  /* Make sure container borders and shadows are removed so only the blank page document prints */
+  .main-card {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .page-wrapper {
+    padding: 0 !important;
+  }
+
+  .card-body {
+    padding: 0 !important;
+  }
+
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+    width: 210mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-only-document,
+  .print-only-document * {
+    font-family: 'TH Sarabun PSK V-1', sans-serif !important;
+    font-size: 16pt !important;
+  }
+
+  .print-only-document {
+    display: block !important;
+    padding: 1.5cm 2cm 1cm 3cm !important;
+    /* Normal page margins: Top 1.5cm, Right 2cm, Bottom 1cm, Left 3cm */
+    color: black;
+    line-height: 1.3 !important;
+    /* Balanced, standard line spacing (TH Sarabun style) */
+    background: white;
+    box-sizing: border-box;
+    width: 210mm !important;
+    height: auto !important;
+  }
+
+  .print-only-document p {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.3 !important;
+  }
+
+  .print-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 1.0rem;
+    /* Comfortable title margin */
+  }
+
+  .print-section {
+    margin-bottom: 0.6rem;
+    /* Balanced distance between sections */
+  }
+
+  .print-section-title {
+    font-weight: 700;
+    border: none !important;
+    padding-bottom: 0;
+    margin-bottom: 0.3rem;
+  }
+
+  .print-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.4rem;
+  }
+
+  .print-info-table td {
+    padding: 0.1rem 0 !important;
+    /* Clean vertical spacing between rows */
+    vertical-align: top;
+    line-height: 1.3 !important;
+  }
+
+  .print-image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .print-image-item {
+    width: 48%;
+    height: 240px;
+    border: 1px solid #aaa;
+    padding: 5px;
+    box-sizing: border-box;
+    background: white;
+    overflow: hidden;
+  }
+
+  .print-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .print-signatures {
+    margin-top: 1.2rem;
+  }
+
+  .print-signatures p {
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Force images to be printed on a separate page (Page 2) */
+  .print-images-page {
+    page-break-before: always !important;
+    padding-top: 1.5cm;
+  }
+}

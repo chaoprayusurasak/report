@@ -1,0 +1,240 @@
+.global-navbar {
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 1.5rem;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* === Left Section === */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.logo-text {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1a202c;
+  letter-spacing: -0.5px;
+}
+
+.logo-circles {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.circle-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.circle-icon.brown-bg {
+  background: #8b6348;
+}
+
+.circle-icon.green-border {
+  border: 1.5px solid #27ae60;
+  background: white;
+}
+
+/* === Right Section === */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  color: #4a5568;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  color: #2d3748;
+  transform: translateY(-2px);
+}
+
+.nav-item.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.lang-switch {
+  color: #718096;
+}
+
+.staff-btn {
+  background: #faf5f0;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.staff-btn:hover {
+  background: #f0ebe4;
+}
+
+.staff-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.logout-btn {
+  color: var(--error);
+}
+
+.logout-btn:hover {
+  color: #c53030;
+}
+
+/* Far Right Logo */
+.nstda-logo {
+  border-left: 1.5px solid #e2e8f0;
+  padding-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.nstda-text {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #3182ce;
+  border: 1px solid #3182ce;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Hamburger Toggle Button */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 18px;
+  padding: 0;
+  z-index: 101;
+}
+
+.hamburger-bar {
+  width: 100%;
+  height: 2px;
+  background-color: #4a5568;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+/* Transform hamburger to 'X' when open */
+.nav-toggle.open .hamburger-bar:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.nav-toggle.open .hamburger-bar:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle.open .hamburger-bar:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .global-navbar {
+    padding: 0.5rem 1rem;
+  }
+
+  .logo-text {
+    font-size: 1.2rem;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav-right {
+    display: none; /* Hidden by default on mobile */
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.2rem 1.5rem;
+    gap: 0.8rem;
+    align-items: stretch;
+    z-index: 99;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  .nav-right.mobile-open {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .nav-item {
+    font-size: 0.95rem;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f7fafc;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .nav-item:hover {
+    transform: none;
+    background: #f7fafc;
+  }
+
+  .nav-item.active {
+    border-bottom-color: var(--primary);
+  }
+
+  .staff-btn {
+    border-radius: 8px;
+    background: #faf5f0;
+  }
+
+  .nstda-logo {
+    display: none;
+  }
+}
