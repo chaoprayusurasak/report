@@ -20,11 +20,148 @@ serve(async (req) => {
   }
 
   try {
-    const { reportId, status } = await req.json();
+    const { reportId, status, dispatchDept } = await req.json();
 
-    if (!reportId || !status) {
-      return new Response(JSON.stringify({ error: "Missing reportId or status" }), {
+    if (!reportId || (!status && !dispatchDept)) {
+      return new Response(JSON.stringify({ error: "Missing reportId or status/dispatchDept" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    if (dispatchDept) {
+      // 1. Fetch report details including coordinates
+      const { data: report, error: fetchErr } = await supabase
+        .from("reports")
+        .select("reference_id, description, location_name, latitude, longitude, category")
+        .eq("id", reportId)
+        .single();
+
+      if (fetchErr || !report) {
+        return new Response(JSON.stringify({ error: "Report not found for dispatch" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // 2. Query officers
+      const { data: officers, error: officerErr } = await supabase
+        .from("department_officers")
+        .select("line_user_id, officer_name")
+        .eq("department_name", dispatchDept)
+        .eq("is_active", true);
+
+      if (officerErr || !officers || officers.length === 0) {
+        console.log(`No active officers found for department ${dispatchDept}`);
+        return new Response(JSON.stringify({ message: `No active officers found for department ${dispatchDept}` }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // 3. Construct Flex message for officers
+      const mapsUrl = (report.latitude && report.longitude)
+        ? `https://www.google.com/maps/search/?api=1&query=${report.latitude},${report.longitude}`
+        : null;
+
+      const flexBubble = {
+        "type": "bubble",
+        "header": {
+          "type": "box",
+          "layout": "vertical",
+          "backgroundColor": "#FF4B4B",
+          "contents": [
+            {
+              "type": "text",
+              "text": `🔔 มีงานแจ้งซ่อมใหม่ส่งถึง [${dispatchDept}]`,
+              "color": "#FFFFFF",
+              "weight": "bold",
+              "size": "md"
+            }
+          ]
+        },
+        "body": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "md",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "vertical",
+              "spacing": "xs",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": `หมายเลขอ้างอิง: ${report.reference_id}`,
+                  "weight": "bold",
+                  "size": "sm"
+                },
+                {
+                  "type": "text",
+                  "text": `รายละเอียดปัญหา: ${report.description}`,
+                  "size": "sm",
+                  "wrap": true,
+                  "margin": "xs"
+                },
+                {
+                  "type": "text",
+                  "text": `จุดสังเกต: ${report.location_name || "ไม่ระบุ"}`,
+                  "size": "sm",
+                  "color": "#8C8C8C",
+                  "wrap": true
+                }
+              ]
+            }
+          ]
+        },
+        ...(mapsUrl ? {
+          "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "button",
+                "style": "primary",
+                "color": "#06C755",
+                "action": {
+                  "type": "uri",
+                  "label": "📍 นำทางบนแผนที่ (Google Maps)",
+                  "uri": mapsUrl
+                }
+              }
+            ]
+          }
+        } : {})
+      };
+
+      // 4. Send Push Message to all officers of this department
+      let sendCount = 0;
+      for (const officer of officers) {
+        try {
+          const res = await fetch("https://api.line.me/v2/bot/message/push", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+            },
+            body: JSON.stringify({
+              to: officer.line_user_id,
+              messages: [{
+                type: "flex",
+                altText: "มีงานแจ้งซ่อมส่งถึงแผนกของคุณ",
+                contents: flexBubble
+              }]
+            })
+          });
+          if (res.ok) sendCount++;
+          else console.error(`Failed to push to officer ${officer.officer_name}:`, await res.text());
+        } catch (err) {
+          console.error(`Exception pushing to officer ${officer.officer_name}:`, err);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, message: `Dispatched to ${sendCount} officers` }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }

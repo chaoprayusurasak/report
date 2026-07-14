@@ -55,3 +55,27 @@ CREATE POLICY "Allow all access to user_sessions for everyone" ON public.user_se
 
 -- 8. Add rating column to reports table if it doesn't exist
 ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS rating INT;
+
+-- 9. Create department_officers table
+CREATE TABLE IF NOT EXISTS public.department_officers (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  department_name TEXT NOT NULL,
+  officer_name TEXT NOT NULL,
+  line_user_id TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  CONSTRAINT department_officers_pkey PRIMARY KEY (id)
+);
+
+-- RLS policies for department_officers
+ALTER TABLE public.department_officers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all access to department_officers for everyone" ON public.department_officers;
+CREATE POLICY "Allow all access to department_officers for everyone" ON public.department_officers FOR ALL USING (true) WITH CHECK (true);
+
+-- Seed test officers (using active LINE User IDs from reports)
+INSERT INTO public.department_officers (department_name, officer_name, line_user_id)
+VALUES 
+  ('กองช่าง', 'นายช่างจิรายุ', 'U8e9335fa31ac0fca8fce249c6b399da8'),
+  ('กองสาธารณสุข', 'เจ้าหน้าที่ภาคิไนย', 'U0aab1fa5ecc50aef944bb1500f8d088b')
+ON CONFLICT DO NOTHING;
+

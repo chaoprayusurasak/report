@@ -193,8 +193,7 @@ export default function AdminDashboard() {
     if (!supabase) return;
 
     try {
-      // Attempt to save to database. Even if the column doesn't exist yet, we catch the error gracefully
-      // and keep the frontend state working so they can print immediately.
+      // Attempt to save to database
       const { error } = await supabase
         .from('reports')
         .update({ responsible_department: newDept })
@@ -208,6 +207,18 @@ export default function AdminDashboard() {
           prev.map((r) => (r.id === selectedReport.id ? { ...r, responsible_department: newDept } : r))
         );
         setSelectedReport((prev) => ({ ...prev, responsible_department: newDept }));
+
+        // Notify department officers about the newly assigned task
+        if (newDept && newDept.trim() !== '') {
+          try {
+            await supabase.functions.invoke('line-notify', {
+              body: { reportId: selectedReport.id, dispatchDept: newDept.trim() }
+            });
+            console.log(`Dispatched task notification for department: ${newDept}`);
+          } catch (notifyErr) {
+            console.error('Failed to dispatch department notification:', notifyErr);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to save department in database:', err);
@@ -728,7 +739,14 @@ export default function AdminDashboard() {
                     boxSizing: 'border-box'
                   }}
                   value={adminDept}
-                  onChange={(e) => handleDepartmentChange(e.target.value)}
+                  onChange={(e) => setAdminDept(e.target.value)}
+                  onBlur={(e) => handleDepartmentChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleDepartmentChange(e.target.value);
+                      e.target.blur();
+                    }
+                  }}
                   placeholder="กรอกหน่วยงาน เช่น กองช่าง, กองสาธารณสุขฯ"
                 />
               </div>
