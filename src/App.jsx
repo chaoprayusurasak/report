@@ -9,8 +9,8 @@ import Footer from './components/Footer';
 import { getSupabase } from './lib/supabase';
 
 function App() {
-  // 1. เปลี่ยนค่าเริ่มต้นตรงนี้จาก 'tracker' เป็น 'report' เพื่อให้ขึ้นหน้าฟอร์มแจ้งเรื่องก่อนเป็นหน้าแรก
-  const [activeTab, setActiveTab] = useState('report'); 
+  // หน้าแรกเป็นหน้าสถิติ/ติดตามปัญหา
+  const [activeTab, setActiveTab] = useState('tracker'); 
   const [session, setSession] = useState(null);
 
   useEffect(() => {
@@ -37,8 +37,7 @@ function App() {
     if (supabase) {
       await supabase.auth.signOut();
       setSession(null);
-      // 2. เปลี่ยนตรงนี้เป็น 'report' เพื่อให้เวลา Admin กดออกจากระบบแล้วกลับมาที่หน้าแจ้งเรื่อง
-      setActiveTab('report'); 
+      setActiveTab('tracker'); 
     }
   };
 

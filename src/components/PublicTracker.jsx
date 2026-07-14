@@ -50,6 +50,16 @@ export default function PublicTracker() {
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
 
+  // Load Lottie Player script dynamically
+  useEffect(() => {
+    if (!document.querySelector('script[data-lottie-player]')) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
+      script.setAttribute('data-lottie-player', 'true');
+      document.head.appendChild(script);
+    }
+  }, []);
+
   const totalCount = reports.length;
   const pendingCount = reports.filter((r) => r.status === 'รอดำเนินการ').length;
   const progressCount = reports.filter((r) => r.status === 'กำลังดำเนินการ').length;
@@ -159,15 +169,28 @@ export default function PublicTracker() {
 
   return (
     <div className="public-tracker">
-      <div className="tracker-header">
-        <h2>
-          <img src="https://cdn-icons-png.flaticon.com/512/1041/1041864.png" className="flaticon-logo-icon" alt="header" />
-          ติดตามสถานะและสถิติปัญหาเรียลไทม์
-        </h2>
-        <p className="realtime-badge">
-          <span className="live-dot"></span>
-          อัปเดตข้อมูลอัตโนมัติ (Real-time)
-        </p>
+
+      {/* === Lottie Hero Banner === */}
+      <div className="tracker-hero">
+        <div className="tracker-hero-left">
+          <div className="tracker-hero-badge">ระบบติดตามปัญหาสาธารณะ</div>
+          <h1 className="tracker-hero-title">ติดตามสถานะ<br /><span>เรื่องร้องเรียนเรียลไทม์</span></h1>
+          <p className="tracker-hero-subtitle">ตรวจสอบความคืบหน้าและสถิติการแก้ไขปัญหาในชุมชน</p>
+          <p className="realtime-badge">
+            <span className="live-dot"></span>
+            อัปเดตข้อมูลอัตโนมัติ (Real-time)
+          </p>
+        </div>
+        <div className="tracker-hero-right">
+          <lottie-player
+            src="https://lottie.host/3a0dbd9f-5e30-4c73-8c5b-4f4e4ed74ddc/ry5RPGiHBJ.json"
+            background="transparent"
+            speed="0.8"
+            style={{ width: '180px', height: '180px' }}
+            loop
+            autoplay
+          ></lottie-player>
+        </div>
       </div>
 
       {/* Summary Statistics */}
