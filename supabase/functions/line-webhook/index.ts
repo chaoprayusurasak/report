@@ -8,6 +8,23 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+function formatThaiDate(dateString: string | null): string {
+  if (!dateString) return "ไม่ได้ระบุ";
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "ไม่ได้ระบุ";
+    const day = d.getDate();
+    const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear() + 543;
+    const hour = String(d.getHours()).padStart(2, '0');
+    const minute = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${year} เวลา ${hour}:${minute} น.`;
+  } catch (_err) {
+    return "ไม่ได้ระบุ";
+  }
+}
+
 // Helper function to verify signature
 async function verifySignature(bodyText: string, signature: string): Promise<boolean> {
   console.log("verifySignature raw input:", {
@@ -339,7 +356,7 @@ serve(async (req) => {
             }]);
           } else {
             // Construct a beautiful Flex Message to show status
-            const formattedDate = new Date(report.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " น.";
+            const formattedDate = formatThaiDate(report.created_at);
             const dept = report.responsible_department || "อยู่ระหว่างพิจารณาจัดส่งแผนก";
             
             // Progress Bar configuration
@@ -477,9 +494,246 @@ serve(async (req) => {
         }
 
         if (textMsg === "ติดตาม" || textMsg === "เช็คสถานะ" || textMsg === "สถานะ" || textMsg === "ติดตามสถานะ") {
+          // Query active reports for this LINE user
+          const { data: activeReports, error: activeReportsErr } = await supabase
+            .from("reports")
+            .select("id, reference_id, category, description, status, created_at")
+            .eq("reporter_line_id", lineUserId)
+            .in("status", ["รอดำเนินการ", "กำลังดำเนินการ"])
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          if (activeReportsErr) {
+            console.error("Error querying active reports:", activeReportsErr);
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "❌ เกิดข้อผิดพลาดในการดึงข้อมูลสถานะคำร้องเรียน กรุณาลองใหม่อีกครั้งครับ"
+            }]);
+            continue;
+          }
+
+          if (!activeReports || activeReports.length === 0) {
+            await replyMessage(replyToken, [{
+              type: "text",
+              text: "💡 ปัจจุบันคุณไม่มีเรื่องร้องเรียนที่อยู่ระหว่างดำเนินการ (รอดำเนินการ / กำลังดำเนินการ) ในระบบครับ\n\nหากต้องการตรวจสอบเรื่องที่เสร็จสิ้นแล้ว หรือเรื่องที่แจ้งผ่านช่องทางอื่น สามารถพิมพ์หมายเลขอ้างอิงโดยตรงในรูปแบบ RPT-XXXXXX-XXXX ได้เลยครับ"
+            }]);
+            continue;
+          }
+
+          // If there is only 1 active report, we can show its status card directly (simulate user typing the reference ID)
+          if (activeReports.length === 1) {
+            const report = activeReports[0];
+            const formattedDate = formatThaiDate(report.created_at);
+            
+            // Progress Bar configuration
+            let progressWidth = "10%";
+            let progressColor = "#FF4B4B";
+            let statusDesc = "เจ้าหน้าที่กำลังรับเรื่องเข้าสู่ระบบ";
+            if (report.status === "กำลังดำเนินการ") {
+              progressWidth = "66%";
+              progressColor = "#F1C40F";
+              statusDesc = "เจ้าหน้าที่กำลังดำเนินการแก้ไขปัญหา";
+            }
+
+            const flexBubble = {
+              "type": "bubble",
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "md",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "🔍 ตรวจสอบสถานะคำร้องเรียน",
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#06C755"
+                  },
+                  {
+                    "type": "separator",
+                    "margin": "md"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "margin": "md",
+                    "spacing": "xs",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": `หมายเลขอ้างอิง: ${report.reference_id}`,
+                        "weight": "bold",
+                        "size": "sm"
+                      },
+                      {
+                        "type": "text",
+                        "text": `สถานะ: ${report.status}`,
+                        "weight": "bold",
+                        "size": "md",
+                        "color": progressColor
+                      },
+                      {
+                        "type": "text",
+                        "text": statusDesc,
+                        "size": "xs",
+                        "color": "#8C8C8C",
+                        "margin": "xs"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "margin": "md",
+                    "contents": [
+                      {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "height": "6px",
+                        "backgroundColor": "#EBEBEB",
+                        "cornerRadius": "3px",
+                        "contents": [
+                          {
+                            "type": "box",
+                            "layout": "vertical",
+                            "width": progressWidth,
+                            "backgroundColor": progressColor,
+                            "height": "6px",
+                            "contents": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "separator",
+                    "margin": "md"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "xs",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": `ปัญหาที่แจ้ง: ${report.description}`,
+                        "size": "sm",
+                        "wrap": true
+                      },
+                      {
+                        "type": "text",
+                        "text": `แจ้งเมื่อ: ${formattedDate}`,
+                        "size": "xs",
+                        "color": "#8C8C8C"
+                      }
+                    ]
+                  }
+                ]
+              }
+            };
+
+            await replyMessage(replyToken, [{
+              type: "flex",
+              altText: "ผลการตรวจสอบสถานะคำร้องเรียน",
+              contents: flexBubble
+            }]);
+            continue;
+          }
+
+          // If there are multiple active reports, show a beautiful Carousel list
+          const bubbles = activeReports.map(report => {
+            const formattedDate = formatThaiDate(report.created_at);
+            const shortDesc = report.description.length > 40 
+              ? report.description.substring(0, 37) + "..." 
+              : report.description;
+            
+            let statusColor = "#FF4B4B";
+            if (report.status === "กำลังดำเนินการ") {
+              statusColor = "#F1C40F";
+            }
+
+            return {
+              "type": "bubble",
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": `📌 เรื่องร้องเรียน: ${report.category}`,
+                    "weight": "bold",
+                    "size": "md",
+                    "color": "#333333"
+                  },
+                  {
+                    "type": "text",
+                    "text": `รหัสอ้างอิง: ${report.reference_id}`,
+                    "size": "xs",
+                    "color": "#8C8C8C"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": "สถานะ: ",
+                        "size": "sm",
+                        "color": "#555555"
+                      },
+                      {
+                        "type": "text",
+                        "text": report.status,
+                        "size": "sm",
+                        "weight": "bold",
+                        "color": statusColor
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "text": `รายละเอียด: ${shortDesc}`,
+                    "size": "sm",
+                    "color": "#666666",
+                    "wrap": true,
+                    "maxLines": 2
+                  },
+                  {
+                    "type": "text",
+                    "text": `แจ้งเมื่อ: ${formattedDate}`,
+                    "size": "xxs",
+                    "color": "#999999",
+                    "margin": "xs"
+                  }
+                ]
+              },
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#06C755",
+                    "action": {
+                      "type": "message",
+                      "label": "🔍 เช็คสถานะละเอียด",
+                      "text": report.reference_id
+                    }
+                  }
+                ]
+              }
+            };
+          });
+
           await replyMessage(replyToken, [{
-            type: "text",
-            text: "🔍 กรุณาพิมพ์หมายเลขอ้างอิงคำร้องของท่าน เช่น: RPT-260714-I7TE เพื่อตรวจสอบสถานะได้ทันทีครับ"
+            type: "flex",
+            altText: "รายการเรื่องร้องเรียนที่อยู่ระหว่างดำเนินการ",
+            contents: {
+              "type": "carousel",
+              "contents": bubbles
+            }
           }]);
           continue;
         }
