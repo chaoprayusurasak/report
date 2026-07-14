@@ -306,7 +306,6 @@ serve(async (req) => {
                       "size": "full",
                       "aspectMode": "cover",
                       "aspectRatio": "4:3",
-                      "cornerRadius": "sm",
                       "margin": "xs"
                     }
                   ]
@@ -329,7 +328,6 @@ serve(async (req) => {
                       "size": "full",
                       "aspectMode": "cover",
                       "aspectRatio": "4:3",
-                      "cornerRadius": "sm",
                       "margin": "xs"
                     }
                   ]
