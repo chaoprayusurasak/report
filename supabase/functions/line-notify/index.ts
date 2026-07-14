@@ -7,6 +7,23 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+function formatThaiDate(dateString: string | null): string {
+  if (!dateString) return "ไม่ได้ระบุ";
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "ไม่ได้ระบุ";
+    const day = d.getDate();
+    const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear() + 543;
+    const hour = String(d.getHours()).padStart(2, '0');
+    const minute = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${year} เวลา ${hour}:${minute} น.`;
+  } catch (_err) {
+    return "ไม่ได้ระบุ";
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -203,13 +220,8 @@ serve(async (req) => {
     const messages = [];
 
     if (status.includes("เสร็จสิ้น")) {
-      const formattedReportDate = report.created_at
-        ? new Date(report.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " น."
-        : "ไม่ได้ระบุ";
-
-      const formattedCompleteDate = report.updated_at
-        ? new Date(report.updated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " น."
-        : "ไม่ได้ระบุ";
+      const formattedReportDate = formatThaiDate(report.created_at);
+      const formattedCompleteDate = formatThaiDate(report.updated_at);
 
       const beforeImageUrl = (report.image_urls && report.image_urls.length > 0)
         ? report.image_urls[0]
