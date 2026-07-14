@@ -148,11 +148,13 @@ export default function AdminDashboard() {
     if (!supabase || !isSupabaseConfigured()) return;
     try {
       const { data, error } = await supabase
-        .from('departments')
-        .select('name')
-        .order('name', { ascending: true });
+        .from('department_officers')
+        .select('department_name');
       if (error) throw error;
-      setDepartments(data.map(d => d.name) || []);
+      
+      // Get unique department names and sort alphabetically
+      const uniqueDepts = Array.from(new Set(data.map(d => d.department_name).filter(Boolean))).sort();
+      setDepartments(uniqueDepts);
     } catch (err) {
       console.error('Error fetching departments:', err);
     }
