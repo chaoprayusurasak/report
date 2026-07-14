@@ -750,7 +750,6 @@ export default function AdminDashboard() {
                   onBlur={(e) => handleDepartmentChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      handleDepartmentChange(e.target.value);
                       e.target.blur();
                     }
                   }}
