@@ -189,6 +189,13 @@ export default function AdminDashboard() {
     setAdminDept(newDept);
     if (!selectedReport) return;
 
+    // Check if the value has actually changed to prevent duplicate executions (e.g. Enter + Blur)
+    const normalizedNewDept = newDept ? newDept.trim() : '';
+    const normalizedOldDept = selectedReport.responsible_department ? selectedReport.responsible_department.trim() : '';
+    if (normalizedNewDept === normalizedOldDept) {
+      return;
+    }
+
     const supabase = getSupabase();
     if (!supabase) return;
 
